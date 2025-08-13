@@ -1,0 +1,13 @@
+event-based-aws-etl-pipeline/
+├─ README.md
+├─ .gitignore
+├─ terraform/
+│  ├─ main.tf
+│  └─ versions.tf
+├─ src/
+│  └─ lambda/
+│     └─ handler.py
+├─ glue/
+│  └─ glue_job.py
+└─ athena/
+   └─ ddl_example.sql
