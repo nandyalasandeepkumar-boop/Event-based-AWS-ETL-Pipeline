@@ -1,0 +1,98 @@
+A) .gitignore
+gitignore
+Copy
+Edit
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.crash
+*.log
+terraform.tfvars
+
+# macOS
+.DS_Store
+B) README.md
+markdown
+Copy
+Edit
+# Event-based AWS ETL Pipeline
+
+**What it does**
+- Triggers on new files in an **S3 raw bucket**.
+- **Lambda** validates the object and **starts a Glue job** with the file’s S3 path.
+- **Glue (PySpark)** cleans/transforms and writes **Parquet** to a **processed bucket** partitioned by date.
+- **Athena** queries the processed data with external tables.
+
+**Architecture**
+S3 (raw) → Lambda (StartJobRun) → Glue Job (PySpark) → S3 (processed, Parquet) → Athena
+
+## How to deploy (Terraform)
+1. Install Terraform and configure AWS credentials (e.g., with `aws configure`).
+2. In `terraform/main.tf`, set `project_name` to something unique (S3 buckets must be globally unique).
+3. From `terraform/`, run:
+   ```bash
+   terraform init
+   terraform apply
+Type yes when prompted.
+
+This will create:
+
+2 S3 buckets: raw & processed
+
+Lambda function + IAM role/policies
+
+S3→Lambda notification
+
+Glue job + IAM role/policies
+
+How to use
+Upload a .csv or .json to the raw bucket at any prefix (e.g., incoming/myfile.csv).
+
+Lambda fires and starts the Glue job with --input_path and --output_path.
+
+Glue writes Parquet to s3://<processed-bucket>/curated/... partitioned by ingestion_date=YYYY-MM-DD.
+
+Create Athena DB/table using athena/ddl_example.sql (edit columns to your schema) and query.
+
+Clean up
+From terraform/:
+
+bash
+Copy
+Edit
+terraform destroy
+Notes
+Edit glue/glue_job.py to match your real schema and transformations.
+
+IAM policies are minimal and scoped to created buckets and Glue actions.
+
+bash
+Copy
+Edit
+
+## C) `terraform/versions.tf`
+```hcl
+terraform {
+  required_version = ">= 1.5.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = ">= 5.0"
+    }
+    archive = {
+      source  = "hashicorp/archive"
+      version = ">= 2.4.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = ">= 3.5.0"
+    }
+  }
+}
